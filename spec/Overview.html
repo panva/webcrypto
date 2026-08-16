@@ -1253,12 +1253,27 @@ interface SubtleCrypto {
     CryptoKey key,
     BufferSource data
   );
+  ArrayBuffer encryptSync(
+    AlgorithmIdentifier algorithm,
+    CryptoKey key,
+    BufferSource data
+  );
   Promise&lt;ArrayBuffer> decrypt(
     AlgorithmIdentifier algorithm,
     CryptoKey key,
     BufferSource data
   );
+  ArrayBuffer decryptSync(
+    AlgorithmIdentifier algorithm,
+    CryptoKey key,
+    BufferSource data
+  );
   Promise&lt;ArrayBuffer> sign(
+    AlgorithmIdentifier algorithm,
+    CryptoKey key,
+    BufferSource data
+  );
+  ArrayBuffer signSync(
     AlgorithmIdentifier algorithm,
     CryptoKey key,
     BufferSource data
@@ -1269,12 +1284,27 @@ interface SubtleCrypto {
     BufferSource signature,
     BufferSource data
   );
+  boolean verifySync(
+    AlgorithmIdentifier algorithm,
+    CryptoKey key,
+    BufferSource signature,
+    BufferSource data
+  );
   Promise&lt;ArrayBuffer> digest(
+    AlgorithmIdentifier algorithm,
+    BufferSource data
+  );
+  ArrayBuffer digestSync(
     AlgorithmIdentifier algorithm,
     BufferSource data
   );
 
   Promise&lt;(CryptoKey or CryptoKeyPair)> generateKey(
+    AlgorithmIdentifier algorithm,
+    boolean extractable,
+    sequence&lt;KeyUsage> keyUsages
+  );
+  (CryptoKey or CryptoKeyPair) generateKeySync(
     AlgorithmIdentifier algorithm,
     boolean extractable,
     sequence&lt;KeyUsage> keyUsages
@@ -1286,7 +1316,19 @@ interface SubtleCrypto {
     boolean extractable,
     sequence&lt;KeyUsage> keyUsages
   );
+  CryptoKey deriveKeySync(
+    AlgorithmIdentifier algorithm,
+    CryptoKey baseKey,
+    AlgorithmIdentifier derivedKeyType,
+    boolean extractable,
+    sequence&lt;KeyUsage> keyUsages
+  );
   Promise&lt;ArrayBuffer> deriveBits(
+    AlgorithmIdentifier algorithm,
+    CryptoKey baseKey,
+    optional [EnforceRange] unsigned long? length = null
+  );
+  ArrayBuffer deriveBitsSync(
     AlgorithmIdentifier algorithm,
     CryptoKey baseKey,
     optional [EnforceRange] unsigned long? length = null
@@ -1299,7 +1341,18 @@ interface SubtleCrypto {
     boolean extractable,
     sequence&lt;KeyUsage> keyUsages
   );
+  CryptoKey importKeySync(
+    KeyFormat format,
+    (BufferSource or JsonWebKey) keyData,
+    AlgorithmIdentifier algorithm,
+    boolean extractable,
+    sequence&lt;KeyUsage> keyUsages
+  );
   Promise&lt;(ArrayBuffer or JsonWebKey)> exportKey(
+    KeyFormat format,
+    CryptoKey key
+  );
+  (ArrayBuffer or JsonWebKey) exportKeySync(
     KeyFormat format,
     CryptoKey key
   );
@@ -1310,7 +1363,22 @@ interface SubtleCrypto {
     CryptoKey wrappingKey,
     AlgorithmIdentifier wrapAlgorithm
   );
+  ArrayBuffer wrapKeySync(
+    KeyFormat format,
+    CryptoKey key,
+    CryptoKey wrappingKey,
+    AlgorithmIdentifier wrapAlgorithm
+  );
   Promise&lt;CryptoKey> unwrapKey(
+    KeyFormat format,
+    BufferSource wrappedKey,
+    CryptoKey unwrappingKey,
+    AlgorithmIdentifier unwrapAlgorithm,
+    AlgorithmIdentifier unwrappedKeyAlgorithm,
+    boolean extractable,
+    sequence&lt;KeyUsage> keyUsages
+  );
+  CryptoKey unwrapKeySync(
     KeyFormat format,
     BufferSource wrappedKey,
     CryptoKey unwrappingKey,
@@ -1378,7 +1446,7 @@ interface SubtleCrypto {
           </dl>
           <div class=note>
             This specification makes no specific requirements on the
-            ordering of responses to calls to methods of {{SubtleCrypto}},
+            ordering of responses to calls to Promise-returning methods of {{SubtleCrypto}},
             neither between multiple calls, nor between calls and tasks
             from other [= task source | task sources =].
             This task source is merely used to [= queue a task =] to
@@ -1392,10 +1460,140 @@ interface SubtleCrypto {
           <h3>Methods and Parameters</h3>
           <div class=note>
             <p>
-              All errors are reported asynchronously by rejecting the returned
-              Promise. This includes Web IDL type mapping errors.
+              Errors from methods returning a Promise are reported asynchronously by rejecting the
+              returned Promise. This includes Web IDL type mapping errors. The declared return types
+              cause errors from synchronous methods, including Web IDL type mapping errors, to be
+              thrown synchronously.
             </p>
           </div>
+          <section id="SubtleCrypto-synchronous-methods">
+            <h4>Synchronous methods</h4>
+            <p>
+              The methods in the first column of the following table are the synchronous
+              counterparts of the Promise-returning methods in the second column.
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Synchronous method</th>
+                  <th>Corresponding Promise-returning method</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><dfn id="dfn-SubtleCrypto-method-encryptSync" data-dfn-for=SubtleCrypto>encryptSync</dfn></td>
+                  <td>{{SubtleCrypto/encrypt()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SubtleCrypto-method-decryptSync" data-dfn-for=SubtleCrypto>decryptSync</dfn></td>
+                  <td>{{SubtleCrypto/decrypt()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SubtleCrypto-method-signSync" data-dfn-for=SubtleCrypto>signSync</dfn></td>
+                  <td>{{SubtleCrypto/sign()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SubtleCrypto-method-verifySync" data-dfn-for=SubtleCrypto>verifySync</dfn></td>
+                  <td>{{SubtleCrypto/verify()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SubtleCrypto-method-digestSync" data-dfn-for=SubtleCrypto>digestSync</dfn></td>
+                  <td>{{SubtleCrypto/digest()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SubtleCrypto-method-generateKeySync" data-dfn-for=SubtleCrypto>generateKeySync</dfn></td>
+                  <td>{{SubtleCrypto/generateKey()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SubtleCrypto-method-deriveKeySync" data-dfn-for=SubtleCrypto>deriveKeySync</dfn></td>
+                  <td>{{SubtleCrypto/deriveKey()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SubtleCrypto-method-deriveBitsSync" data-dfn-for=SubtleCrypto>deriveBitsSync</dfn></td>
+                  <td>{{SubtleCrypto/deriveBits()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SubtleCrypto-method-importKeySync" data-dfn-for=SubtleCrypto>importKeySync</dfn></td>
+                  <td>{{SubtleCrypto/importKey()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SubtleCrypto-method-exportKeySync" data-dfn-for=SubtleCrypto>exportKeySync</dfn></td>
+                  <td>{{SubtleCrypto/exportKey()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SubtleCrypto-method-wrapKeySync" data-dfn-for=SubtleCrypto>wrapKeySync</dfn></td>
+                  <td>{{SubtleCrypto/wrapKey()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SubtleCrypto-method-unwrapKeySync" data-dfn-for=SubtleCrypto>unwrapKeySync</dfn></td>
+                  <td>{{SubtleCrypto/unwrapKey()}}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p>
+              When invoked, each synchronous method MUST perform the top-level steps of its
+              corresponding Promise-returning method, with references to that method and its
+              parameters interpreted as references to the synchronous method and its identically
+              named parameters, and with the following changes. These are the
+              <dfn id="dfn-synchronous-method-steps">synchronous method steps</dfn>.
+            </p>
+            <p>
+              A top-level step is a step directly in the corresponding method's outermost ordered
+              list. It does not include nested substeps or steps in referenced procedures.
+            </p>
+            <ol>
+              <li>
+                <p>
+                  A step that says to return a Promise rejected with an error instead
+                  [= exception/throw | throws =] that error unchanged.
+                </p>
+              </li>
+              <li>
+                <p>
+                  Omit the step that lets |promise| be a new Promise.
+                </p>
+              </li>
+              <li>
+                <p>
+                  Omit the step that says to return |promise| and perform the remaining steps
+                  [= in parallel =], and continue with the next top-level step synchronously.
+                </p>
+              </li>
+              <li>
+                <p>
+                  Omit the step that arranges to reject |promise| if the following steps or
+                  referenced procedures [= exception/throw =] an error. Such errors are instead
+                  propagated to the caller.
+                </p>
+              </li>
+              <li>
+                <p>
+                  Omit the step that [= queue a global task | queues a global task =] to perform the
+                  remaining steps, and continue with the next top-level step immediately.
+                </p>
+              </li>
+              <li>
+                <p>
+                  A step that resolves |promise| with a value instead returns that value.
+                </p>
+              </li>
+            </ol>
+            <p>
+              Referenced procedures are otherwise performed unchanged. A synchronous method uses
+              the same [= supported operation | supported operations =] and key usages as its
+              corresponding Promise-returning method and does not define a new supported operation
+              or key usage.
+            </p>
+            <div class=note>
+              <p>
+                A synchronous method does not return until its operation completes. For potentially
+                long-running operations, authors should use the corresponding Promise-returning
+                method or call the synchronous method from a Worker to avoid blocking the Window's
+                event loop.
+              </p>
+            </div>
+          </section>
+
           <section id="SubtleCrypto-method-encrypt">
             <h4>The encrypt method</h4>
             <p>
@@ -2131,7 +2329,7 @@ interface SubtleCrypto {
                 <p>
                   Let |secret| be the result of performing the derive bits operation
                   specified by |normalizedAlgorithm| using
-                  |key|, |algorithm| and |length|.
+                  |baseKey|, |algorithm| and |length|.
                 </p>
               </li>
               <li>
@@ -2950,10 +3148,10 @@ interface SubtleCrypto {
         <section id="SubtleCrypto-Exceptions">
           <h3>Exceptions</h3>
           <p>
-            The methods of the {{SubtleCrypto}} interface return errors
-            by rejecting the returned promise with a predefined exception defined in ECMAScript
-            [[ECMA-262]] or
-            {{DOMException}}. The following predefined exceptions are
+            The Promise-returning methods of the {{SubtleCrypto}} interface return errors
+            by rejecting the returned promise. The synchronous methods return errors by throwing
+            them synchronously. Errors use a predefined exception defined in ECMAScript
+            [[ECMA-262]] or {{DOMException}}. The following predefined exceptions are
             used: {{TypeError}}. The following DOMException types from
             [[DOM]] are used:
           </p>
@@ -3477,6 +3675,10 @@ dictionary CryptoKeyPair {
           Note that this mapping of methods to underlying
           operations is not one-to-one:
         </p>
+        <p>
+          Each synchronous method uses the same operation or operations as its corresponding
+          Promise-returning method.
+        </p>
         <ul>
           <li>
             <p>The {{SubtleCrypto/encrypt}} method requires the encrypt operation.</p>
@@ -3533,18 +3735,18 @@ dictionary CryptoKeyPair {
           <thead>
             <tr>
               <th>Algorithm name</th>
-              <th scope="col">encrypt</th>
-              <th scope="col">decrypt</th>
-              <th scope="col">sign</th>
-              <th scope="col">verify</th>
-              <th scope="col">digest</th>
-              <th scope="col">generateKey</th>
-              <th scope="col">deriveKey</th>
-              <th scope="col">deriveBits</th>
-              <th scope="col">importKey</th>
-              <th scope="col">exportKey</th>
-              <th scope="col">wrapKey</th>
-              <th scope="col">unwrapKey</th>
+              <th scope="col">encrypt<br>encryptSync</th>
+              <th scope="col">decrypt<br>decryptSync</th>
+              <th scope="col">sign<br>signSync</th>
+              <th scope="col">verify<br>verifySync</th>
+              <th scope="col">digest<br>digestSync</th>
+              <th scope="col">generateKey<br>generateKeySync</th>
+              <th scope="col">deriveKey<br>deriveKeySync</th>
+              <th scope="col">deriveBits<br>deriveBitsSync</th>
+              <th scope="col">importKey<br>importKeySync</th>
+              <th scope="col">exportKey<br>exportKeySync</th>
+              <th scope="col">wrapKey<br>wrapKeySync</th>
+              <th scope="col">unwrapKey<br>unwrapKeySync</th>
             </tr>
           </thead>
           <tbody>
