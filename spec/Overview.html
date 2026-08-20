@@ -1036,7 +1036,7 @@ dictionary KeyAlgorithm {
           <h3>Description</h3>
           <p>
             The {{KeyAlgorithm}} dictionary is provided to aid in
-            documenting how fixed, public properties of a {{CryptoKey}}
+            documenting how fixed, public properties of a {{CryptoKey}} or {{SyncCryptoKey}}
             are reflected back to an application. The actual dictionary type is never exposed
             to applications.
           </p>
@@ -1046,14 +1046,14 @@ dictionary KeyAlgorithm {
           <dl>
             <dt id="dfn-KeyAlgorithm-name"><dfn data-dfn-for=KeyAlgorithm>name</dfn></dt>
             <dd>
-              The name of the algorithm used to generate the {{CryptoKey}}
+              The name of the algorithm used to generate the {{CryptoKey}} or {{SyncCryptoKey}}
             </dd>
           </dl>
         </section>
       </section>
 
       <section id="cryptokey-interface">
-        <h2>CryptoKey interface</h2>
+        <h2>CryptoKey and SyncCryptoKey interfaces</h2>
         <p>
           The <dfn data-idl id="dfn-CryptoKey">CryptoKey</dfn> object represents an opaque reference to keying material that is managed by
           the user agent.
@@ -1065,6 +1065,14 @@ enum KeyUsage { "encrypt", "decrypt", "sign", "verify", "deriveKey", "deriveBits
 
 [SecureContext,Exposed=(Window,Worker),Serializable]
 interface CryptoKey {
+  readonly attribute KeyType type;
+  readonly attribute boolean extractable;
+  readonly attribute object algorithm;
+  readonly attribute object usages;
+};
+
+[SecureContext,Exposed=(Window,Worker),Serializable]
+interface SyncCryptoKey {
   readonly attribute KeyType type;
   readonly attribute boolean extractable;
   readonly attribute object algorithm;
@@ -1087,6 +1095,24 @@ interface CryptoKey {
             storage mechanism, and may instead simply be a reference for the user agent to
             understand how to obtain the keying material when needed, e.g. when performing a
             cryptographic operation.
+          </p>
+          <p>
+            A <dfn data-idl id="dfn-SyncCryptoKey">SyncCryptoKey</dfn> object represents keying
+            material which can be used by {{SyncSubtleCrypto}}. {{SyncCryptoKey}} and {{CryptoKey}}
+            are distinct, unrelated interface types. A {{SyncCryptoKey}} is not accepted where a
+            {{SubtleCrypto}} method requires a {{CryptoKey}}, and a {{CryptoKey}} is not accepted
+            where a {{SyncSubtleCrypto}} method requires a {{SyncCryptoKey}}.
+          </p>
+          <p>
+            This separation allows a user agent to use key storage or providers for
+            {{CryptoKey}} objects which cannot be accessed synchronously, without exposing those
+            keys through {{SyncSubtleCrypto}}.
+          </p>
+          <p>
+            A {{SyncCryptoKey}} is intended to be created only when its handle is suitable for use
+            by the synchronous operations for which the key is created. An asynchronously accessed
+            hardware, remote, or other provider-backed {{CryptoKey}} need not be made available
+            synchronously.
           </p>
         </section>
 
@@ -1118,9 +1144,9 @@ interface CryptoKey {
         </section>
 
         <section id="cryptokey-interface-internal-slots">
-          <h3>CryptoKey internal slots</h3>
+          <h3>Key interface internal slots</h3>
           <p>
-            Every {{CryptoKey}} object has a set of internal slots that store information
+            Every {{CryptoKey}} and {{SyncCryptoKey}} object has a set of internal slots that store information
             about the key. These slots are not exposed as part of this specification; they
             represent internal state that an implementation uses to implement this specification.
             The notational convention used in [[ECMA-262]] is re-used here; internal
@@ -1137,6 +1163,20 @@ interface CryptoKey {
             <dfn id="dfn-CryptoKey-slot-handle" data-dfn-for=CryptoKey>[[\handle]]</dfn>.
           </p>
           <p>
+            All {{SyncCryptoKey}} objects have internal slots named
+            <dfn id="dfn-SyncCryptoKey-slot-type" data-dfn-for=SyncCryptoKey>[[\type]]</dfn>,
+            <dfn id="dfn-SyncCryptoKey-slot-extractable" data-dfn-for=SyncCryptoKey>[[\extractable]]</dfn>,
+            <dfn id="dfn-SyncCryptoKey-slot-algorithm" data-dfn-for=SyncCryptoKey>[[\algorithm]]</dfn>,
+            <dfn id="dfn-SyncCryptoKey-slot-algorithm_cached" data-dfn-for=SyncCryptoKey>[[\algorithm_cached]]</dfn>,
+            <dfn id="dfn-SyncCryptoKey-slot-usages" data-dfn-for=SyncCryptoKey>[[\usages]]</dfn>,
+            <dfn id="dfn-SyncCryptoKey-slot-usages_cached" data-dfn-for=SyncCryptoKey>[[\usages_cached]]</dfn>, and
+            <dfn id="dfn-SyncCryptoKey-slot-handle" data-dfn-for=SyncCryptoKey>[[\handle]]</dfn>.
+            These slots have the same requirements as the corresponding {{CryptoKey}} slots.
+            Within the following member descriptions and serialization steps, a reference to a
+            {{CryptoKey}} internal slot means the slot belonging to the interface type of the key
+            object being described or serialized.
+          </p>
+          <p>
             The contents of the {{CryptoKey/[[algorithm]]}} internal
             slot shall be, or be derived from, a {{KeyAlgorithm}}.
             The contents of the {{CryptoKey/[[usages]]}} internal
@@ -1149,10 +1189,18 @@ interface CryptoKey {
             from opaque identifiers represented as integers, pointer types, or structures that
             provide identifying information. These handles are never exposed to applications.
           </p>
+          <p>
+            The {{SyncCryptoKey/[[handle]]}} slot MUST be suitable for use by each synchronous
+            operation for which the {{SyncCryptoKey}} is created.
+          </p>
         </section>
 
         <section id="cryptokey-interface-members">
-          <h3>CryptoKey interface members</h3>
+          <h3>Key interface members</h3>
+          <p>
+            The members of {{CryptoKey}} and {{SyncCryptoKey}} reflect their respective
+            same-named internal slots as described below.
+          </p>
           <dl>
             <dt id="dfn-CryptoKey-type"><dfn data-dfn-for=CryptoKey>type</dfn></dt>
             <dd>
@@ -1182,7 +1230,7 @@ interface CryptoKey {
         <section id="cryptokey-interface-serializable">
           <h3>Serialization and deserialization steps</h3>
           <p>
-            {{CryptoKey}} objects are <a>serializable objects</a>. Their [= serialization steps =],
+            {{CryptoKey}} and {{SyncCryptoKey}} objects are <a>serializable objects</a>. Their [= serialization steps =],
             given |value| and |serialized|, are:
           </p>
           <ol>
@@ -1226,9 +1274,16 @@ interface CryptoKey {
               Initialize the {{CryptoKey/[[handle]]}} internal slot of |value| to |serialized|.[[\Handle]].
             </li>
           </ol>
+          <p>
+            Deserializing a {{SyncCryptoKey}} MUST preserve a handle suitable for the synchronous
+            operations for which that key is usable. This does not require
+            {{SyncSubtleCrypto}} or any particular synchronous operation to be available in the
+            destination global object.
+          </p>
           <div class=note>
-            When deserializing a serialized {{CryptoKey}} object, it is important that the
-            object is not deserialized as a different type. This is normatively required by the
+            When deserializing a serialized {{CryptoKey}} or {{SyncCryptoKey}} object, it is
+            important that the object is not deserialized as the other interface type, or as any
+            other type. This is normatively required by the
             definition of the [= deserialization steps =], but it merits specific attention, as
             such deserialization may expose the contents of the key material, which in some
             cases (such as when the {{CryptoKey/[[extractable]]}} internal slot is false) should not
@@ -1238,7 +1293,7 @@ interface CryptoKey {
       </section>
 
       <section id="subtlecrypto-interface">
-        <h2>SubtleCrypto interface</h2>
+        <h2>SubtleCrypto and SyncSubtleCrypto interfaces</h2>
         <p>
           The <dfn data-idl id="dfn-SubtleCrypto">SubtleCrypto</dfn> interface provides a set of
           methods for dealing with low-level cryptographic primitives and algorithms.
@@ -1248,6 +1303,8 @@ enum KeyFormat { "raw", "spki", "pkcs8", "jwk" };
 
 [SecureContext,Exposed=(Window,Worker)]
 interface SubtleCrypto {
+  readonly attribute SyncSubtleCrypto? sync;
+
   Promise&lt;ArrayBuffer> encrypt(
     AlgorithmIdentifier algorithm,
     CryptoKey key,
@@ -1320,7 +1377,102 @@ interface SubtleCrypto {
     sequence&lt;KeyUsage> keyUsages
   );
 };
+
+[SecureContext,Exposed=(Window,Worker)]
+interface SyncSubtleCrypto {
+  ArrayBuffer encrypt(
+    AlgorithmIdentifier algorithm,
+    SyncCryptoKey key,
+    BufferSource data
+  );
+  ArrayBuffer decrypt(
+    AlgorithmIdentifier algorithm,
+    SyncCryptoKey key,
+    BufferSource data
+  );
+  ArrayBuffer sign(
+    AlgorithmIdentifier algorithm,
+    SyncCryptoKey key,
+    BufferSource data
+  );
+  boolean verify(
+    AlgorithmIdentifier algorithm,
+    SyncCryptoKey key,
+    BufferSource signature,
+    BufferSource data
+  );
+  ArrayBuffer digest(
+    AlgorithmIdentifier algorithm,
+    BufferSource data
+  );
+
+  (SyncCryptoKey or SyncCryptoKeyPair) generateKey(
+    AlgorithmIdentifier algorithm,
+    boolean extractable,
+    sequence&lt;KeyUsage> keyUsages
+  );
+  SyncCryptoKey deriveKey(
+    AlgorithmIdentifier algorithm,
+    SyncCryptoKey baseKey,
+    AlgorithmIdentifier derivedKeyType,
+    boolean extractable,
+    sequence&lt;KeyUsage> keyUsages
+  );
+  ArrayBuffer deriveBits(
+    AlgorithmIdentifier algorithm,
+    SyncCryptoKey baseKey,
+    optional [EnforceRange] unsigned long? length = null
+  );
+
+  SyncCryptoKey importKey(
+    KeyFormat format,
+    (BufferSource or JsonWebKey) keyData,
+    AlgorithmIdentifier algorithm,
+    boolean extractable,
+    sequence&lt;KeyUsage> keyUsages
+  );
+  (ArrayBuffer or JsonWebKey) exportKey(
+    KeyFormat format,
+    SyncCryptoKey key
+  );
+
+  ArrayBuffer wrapKey(
+    KeyFormat format,
+    SyncCryptoKey key,
+    SyncCryptoKey wrappingKey,
+    AlgorithmIdentifier wrapAlgorithm
+  );
+  SyncCryptoKey unwrapKey(
+    KeyFormat format,
+    BufferSource wrappedKey,
+    SyncCryptoKey unwrappingKey,
+    AlgorithmIdentifier unwrapAlgorithm,
+    AlgorithmIdentifier unwrappedKeyAlgorithm,
+    boolean extractable,
+    sequence&lt;KeyUsage> keyUsages
+  );
+};
         </pre>
+        <p>
+          The <dfn data-idl id="dfn-SyncSubtleCrypto">SyncSubtleCrypto</dfn> interface provides
+          synchronous access to the same low-level cryptographic operations as {{SubtleCrypto}},
+          subject to independent availability and algorithm-support decisions.
+        </p>
+        <p>
+          The <dfn id="dfn-SubtleCrypto-sync" data-dfn-for=SubtleCrypto data-idl>sync</dfn>
+          attribute returns a
+          {{SyncSubtleCrypto}} object when synchronous cryptographic operations are available in
+          the [= relevant global object =], and null otherwise. Its value MUST be stable for the
+          lifetime of the {{SubtleCrypto}} object. A non-null value MUST have the same
+          [= relevant realm =] as the {{SubtleCrypto}} object.
+        </p>
+        <p>
+          A user agent MAY make the {{SubtleCrypto/sync}} attribute return null in some kinds of
+          global object, such as {{Window}}, while returning a {{SyncSubtleCrypto}} object in
+          others, such as workers. For a non-null value, the set of synchronously supported
+          operations and algorithms MAY differ between global objects and from the set supported
+          by {{SubtleCrypto}}.
+        </p>
         <div class=note>
           <p>
             The {{SubtleCrypto}} interface is named "SubtleCrypto" to reflect the fact that many
@@ -1378,7 +1530,7 @@ interface SubtleCrypto {
           </dl>
           <div class=note>
             This specification makes no specific requirements on the
-            ordering of responses to calls to methods of {{SubtleCrypto}},
+            ordering of responses to calls to Promise-returning methods of {{SubtleCrypto}},
             neither between multiple calls, nor between calls and tasks
             from other [= task source | task sources =].
             This task source is merely used to [= queue a task =] to
@@ -1392,10 +1544,182 @@ interface SubtleCrypto {
           <h3>Methods and Parameters</h3>
           <div class=note>
             <p>
-              All errors are reported asynchronously by rejecting the returned
-              Promise. This includes Web IDL type mapping errors.
+              Errors from Promise-returning {{SubtleCrypto}} methods are reported asynchronously
+              by rejecting the returned Promise. This includes Web IDL type mapping errors. Errors from
+              {{SyncSubtleCrypto}} methods, including Web IDL type mapping errors, are thrown
+              synchronously.
             </p>
           </div>
+          <section id="SyncSubtleCrypto-methods">
+            <h4>SyncSubtleCrypto methods</h4>
+            <p>
+              The {{SyncSubtleCrypto}} methods in the first column of the following table are the
+              synchronous counterparts of the {{SubtleCrypto}} methods in the second column.
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>SyncSubtleCrypto method</th>
+                  <th>SubtleCrypto method</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><dfn id="dfn-SyncSubtleCrypto-method-encrypt" data-dfn-for=SyncSubtleCrypto>encrypt</dfn></td>
+                  <td>{{SubtleCrypto/encrypt()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SyncSubtleCrypto-method-decrypt" data-dfn-for=SyncSubtleCrypto>decrypt</dfn></td>
+                  <td>{{SubtleCrypto/decrypt()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SyncSubtleCrypto-method-sign" data-dfn-for=SyncSubtleCrypto>sign</dfn></td>
+                  <td>{{SubtleCrypto/sign()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SyncSubtleCrypto-method-verify" data-dfn-for=SyncSubtleCrypto>verify</dfn></td>
+                  <td>{{SubtleCrypto/verify()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SyncSubtleCrypto-method-digest" data-dfn-for=SyncSubtleCrypto>digest</dfn></td>
+                  <td>{{SubtleCrypto/digest()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SyncSubtleCrypto-method-generateKey" data-dfn-for=SyncSubtleCrypto>generateKey</dfn></td>
+                  <td>{{SubtleCrypto/generateKey()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SyncSubtleCrypto-method-deriveKey" data-dfn-for=SyncSubtleCrypto>deriveKey</dfn></td>
+                  <td>{{SubtleCrypto/deriveKey()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SyncSubtleCrypto-method-deriveBits" data-dfn-for=SyncSubtleCrypto>deriveBits</dfn></td>
+                  <td>{{SubtleCrypto/deriveBits()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SyncSubtleCrypto-method-importKey" data-dfn-for=SyncSubtleCrypto>importKey</dfn></td>
+                  <td>{{SubtleCrypto/importKey()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SyncSubtleCrypto-method-exportKey" data-dfn-for=SyncSubtleCrypto>exportKey</dfn></td>
+                  <td>{{SubtleCrypto/exportKey()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SyncSubtleCrypto-method-wrapKey" data-dfn-for=SyncSubtleCrypto>wrapKey</dfn></td>
+                  <td>{{SubtleCrypto/wrapKey()}}</td>
+                </tr>
+                <tr>
+                  <td><dfn id="dfn-SyncSubtleCrypto-method-unwrapKey" data-dfn-for=SyncSubtleCrypto>unwrapKey</dfn></td>
+                  <td>{{SubtleCrypto/unwrapKey()}}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p>
+              When invoked, each {{SyncSubtleCrypto}} method MUST perform the top-level steps of its
+              corresponding Promise-returning method, with references to that method and its
+              receiver and parameters interpreted as references to the {{SyncSubtleCrypto}} method,
+              its receiver and its identically named parameters, and with the following changes.
+              These are the
+              <dfn id="dfn-synchronous-method-steps">synchronous method steps</dfn>.
+            </p>
+            <p>
+              A top-level step is a step directly in the corresponding method's outermost ordered
+              list. It does not include nested substeps or steps in referenced procedures.
+            </p>
+            <ol>
+              <li>
+                <p>
+                  A step that says to return a Promise rejected with an error instead
+                  [= exception/throw | throws =] that error unchanged.
+                </p>
+              </li>
+              <li>
+                <p>
+                  Omit the step that lets |promise| be a new Promise.
+                </p>
+              </li>
+              <li>
+                <p>
+                  Omit the step that says to return |promise| and perform the remaining steps
+                  [= in parallel =], and continue with the next top-level step synchronously.
+                </p>
+              </li>
+              <li>
+                <p>
+                  Omit the step that arranges to reject |promise| if the following steps or
+                  referenced procedures [= exception/throw =] an error. Such errors are instead
+                  propagated to the caller.
+                </p>
+              </li>
+              <li>
+                <p>
+                  Omit the step that [= queue a global task | queues a global task =] to perform the
+                  remaining steps, and continue with the next top-level step immediately.
+                </p>
+              </li>
+              <li>
+                <p>
+                  A step that resolves |promise| with a value instead returns that value.
+                </p>
+              </li>
+            </ol>
+            <p>
+              Throughout the method steps and every referenced procedure, replace {{CryptoKey}}
+              and {{CryptoKeyPair}} types, internal slots, interface tests, object creation and
+              result conversion with their {{SyncCryptoKey}} and {{SyncCryptoKeyPair}}
+              counterparts. This replacement applies only while performing a {{SyncSubtleCrypto}}
+              method and does not make values of the two key-interface families interchangeable.
+            </p>
+            <p>
+              Within the corresponding method's own steps, replace each use of
+              [= normalize an algorithm | normalize an algorithm =] that selects a cryptographic
+              operation, excluding internal helper operations such as `get key length` or
+              `get shared key length`, with
+              [= normalize an algorithm for synchronous execution | normalizing an algorithm for
+              synchronous execution =], using the {{SyncSubtleCrypto}} receiver. Referenced
+              procedures are otherwise performed unchanged.
+            </p>
+            <p>
+              Within the corresponding method's own steps, interpret every test of whether a
+              cryptographic algorithm supports a [= supported operation =], including an algorithm
+              obtained from a key's {{CryptoKey/[[algorithm]]}} internal slot, as a test of whether
+              that operation and algorithm are
+              [= operation is synchronously supported | synchronously supported =] by the
+              {{SyncSubtleCrypto}} receiver. For {{SyncSubtleCrypto/wrapKey()}} and
+              {{SyncSubtleCrypto/unwrapKey()}}, use the dedicated operation if normalization for
+              that operation succeeded, and use the encryption or decryption fallback if the
+              dedicated normalization failed and normalization for the fallback succeeded. This
+              preserves the registered parameter type associated with the selected operation.
+            </p>
+            <p>
+              Before directly performing a cryptographic [= supported operation =] which was not
+              selected by such normalization, if the operation and normalized algorithm are not
+              [= operation is synchronously supported | synchronously supported =] by the
+              {{SyncSubtleCrypto}} receiver, [= exception/throw =] a {{NotSupportedError}}. This
+              check applies to the component operations performed directly by composed methods,
+              such as export within {{SyncSubtleCrypto/wrapKey()}}, but not to internal helper
+              operations such as `get key length` or to steps nested inside an already checked
+              cryptographic operation.
+            </p>
+            <p>
+              A {{SyncSubtleCrypto}} method uses the same
+              [= supported operation | supported operations =], operation definitions and key
+              usages as its corresponding {{SubtleCrypto}} method. It does not define a new
+              operation or key usage. Whether an existing operation is available synchronously is
+              determined independently for the {{SyncSubtleCrypto}} receiver.
+            </p>
+            <div class=note>
+              <p>
+                A {{SyncSubtleCrypto}} method does not return until its operation completes and
+                blocks its calling agent in the meantime. For potentially long-running operations,
+                authors should use {{SubtleCrypto}} or perform the synchronous operation in a
+                Worker. User agents are encouraged not to expose operations synchronously when they
+                may require user interaction or waiting for a hardware, remote, or other
+                asynchronous key provider.
+              </p>
+            </div>
+          </section>
+
           <section id="SubtleCrypto-method-encrypt">
             <h4>The encrypt method</h4>
             <p>
@@ -2131,7 +2455,7 @@ interface SubtleCrypto {
                 <p>
                   Let |secret| be the result of performing the derive bits operation
                   specified by |normalizedAlgorithm| using
-                  |key|, |algorithm| and |length|.
+                  |baseKey|, |algorithm| and |length|.
                 </p>
               </li>
               <li>
@@ -2950,10 +3274,10 @@ interface SubtleCrypto {
         <section id="SubtleCrypto-Exceptions">
           <h3>Exceptions</h3>
           <p>
-            The methods of the {{SubtleCrypto}} interface return errors
-            by rejecting the returned promise with a predefined exception defined in ECMAScript
-            [[ECMA-262]] or
-            {{DOMException}}. The following predefined exceptions are
+            The Promise-returning methods of {{SubtleCrypto}} return errors by rejecting the returned promise.
+            The methods of {{SyncSubtleCrypto}} return errors by throwing them synchronously.
+            Errors use a predefined exception defined in ECMAScript
+            [[ECMA-262]] or {{DOMException}}. The following predefined exceptions are
             used: {{TypeError}}. The following DOMException types from
             [[DOM]] are used:
           </p>
@@ -3064,16 +3388,28 @@ typedef Uint8Array BigInteger;
       </section>
 
       <section id="keypair">
-        <h2>CryptoKeyPair dictionary</h2>
+        <h2>Key-pair dictionaries</h2>
         <pre class=idl>
 dictionary CryptoKeyPair {
   CryptoKey publicKey;
   CryptoKey privateKey;
 };
+
+dictionary SyncCryptoKeyPair {
+  SyncCryptoKey publicKey;
+  SyncCryptoKey privateKey;
+};
         </pre>
         <p>
           The <dfn data-idl id="dfn-CryptoKeyPair">CryptoKeyPair</dfn> dictionary represents an
           asymmetric key pair that is comprised of both public (<dfn data-idl data-dfn-for=CryptoKeyPair id="dfn-CryptoKeyPair-publicKey">publicKey</dfn>) and private (<dfn data-idl data-dfn-for=CryptoKeyPair id="dfn-CryptoKeyPair-privateKey">privateKey</dfn>) keys.
+        </p>
+        <p>
+          The <dfn data-idl id="dfn-SyncCryptoKeyPair">SyncCryptoKeyPair</dfn> dictionary
+          represents an asymmetric key pair comprised of a
+          <dfn data-idl data-dfn-for=SyncCryptoKeyPair>publicKey</dfn> and a
+          <dfn data-idl data-dfn-for=SyncCryptoKeyPair>privateKey</dfn>, both of which are
+          {{SyncCryptoKey}} objects.
         </p>
       </section>
 
@@ -3083,7 +3419,7 @@ dictionary CryptoKeyPair {
           <h3>Overview</h3>
           <p>
             In addition to providing a common interface to perform cryptographic operations, by
-            way of the {{SubtleCrypto}} interface, this specification
+            way of the {{SubtleCrypto}} and {{SyncSubtleCrypto}} interfaces, this specification
             also provides descriptions for a variety of algorithms that authors may wish to use and
             that User Agents may choose to implement. This includes a selection of commonly-deployed
             symmetric and asymmetric algorithms, key derivation mechanisms, and methods for wrapping
@@ -3109,7 +3445,7 @@ dictionary CryptoKeyPair {
             <p>
               Every cryptographic algorithm defined for use with the Web Cryptography API has a list
               of <dfn id="supported-operation">supported operations</dfn>, which are a set of
-              sub-algorithms to be invoked by the {{SubtleCrypto}}
+              sub-algorithms to be invoked by the {{SubtleCrypto}} or {{SyncSubtleCrypto}}
               interface in order to perform the desired cryptographic operation. This specification
               makes use of the following operations:
             </p>
@@ -3170,6 +3506,20 @@ dictionary CryptoKeyPair {
             the supported operations, registering their IDL parameter type as indicated.
           </p>
           <p>
+            These registrations define the shared algorithm names, parameter types and operation
+            steps. They do not require an operation to be exposed through {{SyncSubtleCrypto}}.
+            A user agent may expose an independently selected subset of the registered operations
+            synchronously, including a subset based on normalized parameter values, without
+            defining a second operation or registration.
+          </p>
+          <p>
+            When a registered operation is performed on behalf of {{SyncSubtleCrypto}}, its
+            registered parameter and result IDL types MUST be interpreted as their
+            [= synchronous counterpart of an IDL type | synchronous counterparts =]. This is an
+            exception to the otherwise exact parameter and result types in an algorithm's
+            registration table.
+          </p>
+          <p>
             Unless otherwise stated, objects created by the operations defined in this specification
             shall be associated with the [= relevant realm =] of [= this =].
           </p>
@@ -3220,6 +3570,40 @@ dictionary CryptoKeyPair {
                 </p>
               </li>
             </ol>
+            <p>
+              Each {{SyncSubtleCrypto}} object has an implementation-defined set of
+              synchronously available operations and algorithms. This set is scoped to that
+              object's [= relevant global object =] and is separate from {{supportedAlgorithms}}.
+              It is not exposed directly to applications.
+            </p>
+            <p>
+              To determine whether an <dfn>operation is synchronously supported</dfn>, given a
+              {{SyncSubtleCrypto}} object |subtle|, a [= supported operation =] |op| and a
+              normalized algorithm |algorithm|, the user agent MUST return an
+              implementation-defined boolean subject to the following requirements:
+            </p>
+            <ul>
+              <li>
+                |op| and |algorithm| MUST identify an operation registered in
+                {{supportedAlgorithms}}.
+              </li>
+              <li>
+                A true result means that the operation, including the relevant referenced
+                procedures, can be performed synchronously for |subtle| with the supplied
+                normalized parameters and the {{SyncCryptoKey}} key family.
+              </li>
+              <li>
+                Support MAY differ by operation, normalized parameter values and relevant global
+                object, and need not match support exposed through {{SubtleCrypto}}.
+              </li>
+            </ul>
+            <p>
+              An <dfn>operation is potentially synchronously supported</dfn>, given a
+              {{SyncSubtleCrypto}} object |subtle|, a [= supported operation =] |op| and a
+              [= recognized algorithm name =] |name|, if there is at least one normalized
+              algorithm named |name| for which |op| is
+              [= operation is synchronously supported | synchronously supported =] by |subtle|.
+            </p>
           </section>
 
           <section id="algorithm-normalization-define-an-algorithm">
@@ -3398,6 +3782,63 @@ dictionary CryptoKeyPair {
             </dl>
           </section>
 
+          <section id="algorithm-normalization-synchronous">
+            <h4>Normalizing an algorithm for synchronous execution</h4>
+            <p>
+              The <dfn>synchronous counterpart of an IDL type</dfn> is obtained recursively as
+              follows:
+            </p>
+            <ul>
+              <li>Resolve typedefs, applying these rules recursively to the resulting type.</li>
+              <li>{{CryptoKey}} is replaced with {{SyncCryptoKey}}.</li>
+              <li>{{CryptoKeyPair}} is replaced with {{SyncCryptoKeyPair}}.</li>
+              <li>
+                For a dictionary, union, nullable, annotated, or container type, apply these rules
+                recursively to its constituent types and dictionary members, including inherited
+                members.
+              </li>
+              <li>Every other type is unchanged.</li>
+            </ul>
+            <p>
+              This transformation is a specification device used during Web IDL conversion. It
+              does not make {{CryptoKey}} and {{SyncCryptoKey}} interchangeable interface types.
+            </p>
+            <p>
+              The <dfn id="dfn-normalize-an-algorithm-synchronously">normalize an algorithm for
+              synchronous execution</dfn> algorithm takes a {{SyncSubtleCrypto}} object |subtle|,
+              an operation name |op| and an {{AlgorithmIdentifier}} |alg|. Its output is either a
+              normalized algorithm or an error. It behaves as follows:
+            </p>
+            <ol>
+              <li>
+                Let |normalizedAlgorithm| be the result of running the
+                [= normalize an algorithm =] algorithm, with `alg` set to |alg| and `op` set to
+                |op|, with the following modifications:
+                <ol>
+                  <li>
+                    After selecting the matching registered algorithm name, but before converting
+                    |alg| to its registered IDL dictionary type, if |op| and that name are not
+                    [= operation is potentially synchronously supported | potentially
+                    synchronously supported =] by |subtle|, return a new {{NotSupportedError}}.
+                  </li>
+                  <li>
+                    Each conversion to a registered IDL dictionary type uses that type's
+                    [= synchronous counterpart of an IDL type | synchronous counterpart =]. Apply
+                    this modification recursively while normalizing nested algorithm identifiers;
+                    the preceding synchronous-support check applies only to the outer invocation.
+                  </li>
+                </ol>
+              </li>
+              <li>If an error occurred, return the error.</li>
+              <li>
+                If |op| and |normalizedAlgorithm| are not
+                [= operation is synchronously supported | synchronously supported =] by |subtle|,
+                return a new {{NotSupportedError}}.
+              </li>
+              <li>Return |normalizedAlgorithm|.</li>
+            </ol>
+          </section>
+
         </section>
 
         <section id="algorithm-recommendations" class="informative">
@@ -3476,6 +3917,11 @@ dictionary CryptoKeyPair {
           in the procedures for the method, must be defined in the algorithm specification.
           Note that this mapping of methods to underlying
           operations is not one-to-one:
+        </p>
+        <p>
+          Each {{SyncSubtleCrypto}} method uses the same operation or operations as the
+          same-named {{SubtleCrypto}} method. The table documents the shared operation
+          definitions; it does not imply that an operation is available synchronously.
         </p>
         <ul>
           <li>
